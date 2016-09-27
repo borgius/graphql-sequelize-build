@@ -6,8 +6,7 @@
   "scripts": {
     "check": "npm run lint",
     "lint": "eslint src",
-    "build": "babel src --ignore test --out-dir lib",
-    "clone-graphql-sequelize": "git clone https://github.com/mickhansen/graphql-sequelize"
+    "build": "babel src --ignore test --out-dir lib"
   },
   "repository": "https://github.com/ivnivnch/graphql-sequelize-build.git",
   "keywords": [
