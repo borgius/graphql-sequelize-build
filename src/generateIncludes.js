@@ -67,8 +67,8 @@ export default function generateIncludes(simpleAST, type, context, options) {
     include = options.include && !(includeResolver.$options && includeResolver.$options.separate);
 
     if (association) {
-      includeOptions = argsToFindOptions(args, association.target);
       allowedAttributes = Object.keys(association.target.rawAttributes);
+      includeOptions = argsToFindOptions(args, allowedAttributes);
 
       if (options.filterAttributes) {
         includeOptions.attributes = (includeOptions.attributes || [])

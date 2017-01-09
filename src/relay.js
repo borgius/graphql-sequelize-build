@@ -149,8 +149,17 @@ export function sequelizeConnection({
     }
   };
 
-  let orderByAttribute = function (orderBy) {
-    return orderBy[0][0];
+  let orderByAttribute = function (orderAttr, {source, args, context, info}) {
+    return typeof orderAttr === 'function' ? orderAttr(source, args, context, info) : orderAttr;
+  };
+
+  let orderByDirection = function (orderDirection, args) {
+    if (args.last) {
+      return orderDirection.indexOf('ASC') >= 0
+              ? orderDirection.replace('ASC', 'DESC')
+              : orderDirection.replace('DESC', 'ASC');
+    }
+    return orderDirection;
   };
 
   /**
@@ -328,7 +337,10 @@ export function sequelizeConnection({
       //build: handleResult
       values = await Promise.resolve(handleResult(values, args, context, info));
 
-      const {source} = info;
+      const {
+        source,
+      } = info;
+
       var cursor = null;
 
       if (args.after || args.before) {

@@ -1,6 +1,6 @@
 {
   "name": "graphql-sequelize-build",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "GraphQL & Relay for MySQL & Postgres via Sequelize",
   "main": "lib/index.js",
   "scripts": {
@@ -15,7 +15,6 @@
   ],
   "author": "ivnivnch <ivnivnch@gmail.com>",
   "dependencies": {
-    "invariant": "2.2.1",
     "lodash": "^4.0.0"
   },
   "peerDependencies": {

@@ -1,10 +1,10 @@
 import { GraphQLList } from 'graphql';
+import argsToFindOptions from './argsToFindOptions';
+import { isConnection, handleConnection, nodeAST, nodeType } from './relay';
+import invariant from 'assert';
 import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
-import argsToFindOptions from './argsToFindOptions';
-import { isConnection, handleConnection, nodeAST, nodeType } from './relay';
-import invariant from 'invariant';
 
 function inList(list, attribute) {
   return ~list.indexOf(attribute);
@@ -28,6 +28,7 @@ function resolverFactory(target, options) {
   targetAttributes = Object.keys(model.rawAttributes);
 
   options = options || {};
+
   if (options.include === undefined) options.include = true;
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
@@ -44,14 +45,13 @@ function resolverFactory(target, options) {
       , list = options.list || type instanceof GraphQLList
       , simpleAST = simplifyAST(ast, info)
       , fields = simpleAST.fields
-      , findOptions = argsToFindOptions(args, model);
+      , findOptions = argsToFindOptions(args, targetAttributes);
 
     context = context || {};
 
     if (isConnection(info.returnType)) {
       simpleAST = nodeAST(simpleAST);
       fields = simpleAST.fields;
-
       type = nodeType(type);
     }
 
@@ -78,7 +78,6 @@ function resolverFactory(target, options) {
       if (options.defaultAttributes) {
         findOptions.attributes = findOptions.attributes.concat(options.defaultAttributes);
       }
-
     } else {
       findOptions.attributes = targetAttributes;
     }
