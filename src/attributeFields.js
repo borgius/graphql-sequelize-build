@@ -65,4 +65,4 @@ export default function (Model, options = {}) {
   }
 
   return result;
-}
+};

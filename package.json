@@ -1,6 +1,6 @@
 {
   "name": "graphql-sequelize-build",
-  "version": "0.0.27",
+  "version": "0.1.0",
   "description": "GraphQL & Relay for MySQL & Postgres via Sequelize",
   "main": "lib/index.js",
   "scripts": {
@@ -20,7 +20,7 @@
   },
   "peerDependencies": {
     "graphql-relay": "^0.4.2",
-    "graphql": "^0.5.0 || ^0.6.0"
+    "graphql": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0"
   },
   "devDependencies": {
     "babel-cli": "^6.9.0",

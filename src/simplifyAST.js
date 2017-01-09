@@ -113,4 +113,4 @@ export default function simplifyAST(ast, info, parent) {
     fields: {},
     args: {}
   });
-}
+};

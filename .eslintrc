@@ -31,6 +31,7 @@
     "no-empty-character-class": 2,
     "no-ex-assign": 2,
     "no-extra-boolean-cast": 2,
+    "no-extra-parens": 0,
     "no-extra-semi": 2,
     "no-func-assign": 2,
     "no-inner-declarations": [
@@ -53,7 +54,7 @@
     "consistent-return": 0,
     "default-case": 0,
     "dot-notation": 0,
-    "eqeqeq": 0,
+    "eqeqeq": 2,
     "guard-for-in": 2,
     "no-alert": 2,
     "no-caller": 2,
@@ -111,7 +112,7 @@
     "no-undef-init": 2,
     "no-undefined": 0,
     "no-unused-vars": [
-      1,
+      2,
       {
         "vars": "all",
         "args": "after-used"
@@ -180,7 +181,7 @@
     "no-ternary": 0,
     "no-trailing-spaces": 2,
     "no-underscore-dangle": 0,
-    "no-extra-parens": 1,
+    "no-extra-parens": 2,
     "one-var": 0,
     "operator-assignment": [
       2,
@@ -239,7 +240,7 @@
       }
     ],
     "spaced-comment": [
-      0,
+      2,
       "always"
     ],
     "wrap-regex": 0,
