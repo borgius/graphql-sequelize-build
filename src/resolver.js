@@ -47,12 +47,18 @@ function resolverFactory(target, options) {
       , fields = simpleAST.fields
       , findOptions = argsToFindOptions(args, targetAttributes);
 
+    info = {
+      ...info,
+      type: type,
+      source: source
+    };
+
     context = context || {};
 
     if (isConnection(info.returnType)) {
+      type = nodeType(type);
       simpleAST = nodeAST(simpleAST);
       fields = simpleAST.fields;
-      type = nodeType(type);
     }
 
     type = type.ofType || type;

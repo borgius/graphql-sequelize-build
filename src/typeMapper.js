@@ -85,6 +85,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     return new GraphQLList(elementType);
   }
 
+  //build: map RANGE
   if (sequelizeType instanceof RANGE) {
     let elementType = toGraphQL(sequelizeType.options.subtype, sequelizeTypes);
     return new GraphQLList(elementType);

@@ -223,9 +223,14 @@ export function sequelizeConnection({
   };
 
   let resolveEdge = function (item, index, queriedCursor, args = {}, source) {
-    let startIndex = 0;
+    let startIndex = null;
     if (queriedCursor) startIndex = Number(queriedCursor.index);
-    if (startIndex !== 0) startIndex++;
+    if (startIndex !== null) {
+      startIndex++;
+    } else {
+      startIndex = 0;
+    }
+
     return {
       cursor: toCursor(item, index + startIndex),
       node: item,
@@ -296,16 +301,18 @@ export function sequelizeConnection({
       }, {order: [[orderAttribute, orderDirection]], include: []}), (a, b) => Array.isArray(a) ? a.concat(b) : b);
     }, {order: [], include: []}), (a, b) => Array.isArray(a) ? a.concat(b) : b);
 
-    if (model.sequelize.dialect.name === 'postgres' && options.limit) {
-      options.attributes.push([
-        model.sequelize.literal('COUNT(*) OVER()'),
-        'full_count'
-      ]);
-    } else if (model.sequelize.dialect.name === 'mssql' && options.limit) {
-      options.attributes.push([
-        model.sequelize.literal('COUNT(1) OVER()'),
-        'full_count'
-      ]);
+    if (options.limit && !options.attributes.some(attribute => attribute.length === 2 && attribute[1] === 'full_count')) {
+      if (model.sequelize.dialect.name === 'postgres') {
+        options.attributes.push([
+          model.sequelize.literal('COUNT(*) OVER()'),
+          'full_count'
+        ]);
+      } else if (model.sequelize.dialect.name === 'mssql') {
+        options.attributes.push([
+          model.sequelize.literal('COUNT(1) OVER()'),
+          'full_count'
+        ]);
+      }
     }
 
     //build: argsToWhereWithIncludeAssociations
@@ -316,7 +323,7 @@ export function sequelizeConnection({
       let cursor = fromCursor(args.after || args.before);
       let startIndex = Number(cursor.index);
 
-      if (startIndex > 0) options.offset = startIndex + 1;
+      if (startIndex >= 0) options.offset = startIndex + 1;
     }
     options.attributes = _.uniq(options.attributes);
 
@@ -362,15 +369,29 @@ export function sequelizeConnection({
       if ((args.first || args.last) && (fullCount === null || fullCount === undefined)) {
         // In case of `OVER()` is not available, we need to get the full count from a second query.
         //build: context.findOptions
-        fullCount = await model.count(context.findOptions);
+        const options = context.findOptions;
+
+        if (target.count) {
+          if (target.associationType) {
+            fullCount = await target.count(source, options);
+          } else {
+            fullCount = await target.count(options);
+          }
+        } else {
+          fullCount = await target.manyFromSource.count(source, options);
+        }
       }
 
       let hasNextPage = false;
       let hasPreviousPage = false;
       if (args.first || args.last) {
         const count = parseInt(args.first || args.last, 10);
-        let index = cursor ? Number(cursor.index) : 0;
-        if (index !== 0) index++;
+        let index = cursor ? Number(cursor.index) : null;
+        if (index !== null) {
+          index++;
+        } else {
+          index = 0;
+        }
 
         hasNextPage = index + 1 + count <= fullCount;
         hasPreviousPage = index - count >= 0;
