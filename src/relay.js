@@ -98,11 +98,6 @@ export function sequelizeNodeInterface(sequelize) {
   };
 }
 
-export function nodeAST(connectionAST) {
-  return connectionAST.fields.edges &&
-    connectionAST.fields.edges.fields.node;
-}
-
 export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
@@ -333,7 +328,6 @@ export function sequelizeConnection({
   //build: resolverFactory
   let $resolver = resolverFactory(target, {
     handleConnection: false,
-    include: true,
     list: true,
     before: function (options, args, context, info) {
       options = buildFindOptions(options, args, context, info);
