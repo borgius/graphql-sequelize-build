@@ -194,7 +194,7 @@ export function sequelizeConnection({
 
     _.each(args, (value, key) => {
       if (key in $connectionArgs) return;
-      _.assign(result, where(key, value));
+      _.assign(result, where(key, value, result));
     });
 
     return result;
@@ -209,7 +209,7 @@ export function sequelizeConnection({
 
     _.each(args, (value, key) => {
       if (key in $connectionArgs) return;
-      const res = where(key, value);
+      const res = where(key, value, result);
 
       if (Array.isArray(res)) {
         _.mergeWith(result.where, res[0], (a, b) => Array.isArray(a) ? a.concat(b) : undefined);
