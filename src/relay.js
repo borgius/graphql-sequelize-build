@@ -243,6 +243,8 @@ export function sequelizeConnection({
 
   //build: buildFindOptions
   const buildFindOptions = (options = {}, args, context, info) => {
+    const modelName = model.options.name.singular || model.name;
+
     if (args.first || args.last) {
       options.limit = parseInt(args.first || args.last, 10);
     }
@@ -299,29 +301,47 @@ export function sequelizeConnection({
           associationInclude.push({association, include: []});
         } else {
           if (source) {
-              if (!(value in source.attributes)) throw Error(`ORDER_BY`);
+            if (!(value in source.attributes)) throw Error(`ORDER_BY`);
 
-              source = null;
+            source = null;
           }
 
           order.push(value);
         }
       }
 
+      const orderAttributeContainsMatch = orderAttribute.match(/^(\w+)\s*(@>|<@)\s*\[([\w\s,]+)\]$/);
+
+      if (orderAttributeContainsMatch) {
+        const orderAttributeContainsName = orderAttributeContainsMatch[1];
+        const orderAttributeContainsOperator = orderAttributeContainsMatch[2];
+        const orderAttributeContainsValues = orderAttributeContainsMatch[3].split(/,\s*/).map(i => `'${i}'`).join(',');
+
+        orderAttribute =
+          `"${orderAttributeContainsName}"${orderAttributeContainsOperator}ARRAY[${orderAttributeContainsValues}]::varchar[]`;
+
+        if (order.every(i => typeof i == 'string')) orderAttribute = `"${modelName}".${orderAttribute}`;
+
+        orderAttribute = model.sequelize.literal(orderAttribute);
+      }
+
+      const orderAttributeJsonFields = order.filter(i => typeof i == 'string');
+
       order.push(orderAttribute);
 
-      const orderAttributes = order.filter(i => typeof i == 'string');
+      if (orderAttributeJsonFields.length) {
+        orderAttributeJsonFields.push(orderAttribute);
 
-      if (orderAttributes.length > 1) {
-        let orderJsonAttribute = `"${orderAttributes[0]}"#>>'{${orderAttributes.slice(1).join(',')}}'`;//todo: fix sequelize.json
+        const orderAttributeJsonName = orderAttributeJsonFields[0];
+        const orderAttributeJsonValues = orderAttributeJsonFields.slice(1).join(',');
 
-        if (orderAttributes.length == order.length) {
-          const modelName = model.options.name.singular || model.name;
+        orderAttribute = `"${orderAttributeJsonName}"#>>'{${orderAttributeJsonValues}}'`;//todo: fix sequelize.json
 
-          orderJsonAttribute = `"${modelName}".${orderJsonAttribute}`;
-        }
+        if (orderAttributeJsonFields.length == order.length) orderAttribute = `"${modelName}".${orderAttribute}`;
 
-        order.splice(- orderAttributes.length, orderAttributes.length, model.sequelize.literal(orderJsonAttribute));
+        orderAttribute = model.sequelize.literal(orderAttribute);
+
+        order.splice(- orderAttributeJsonFields.length, orderAttributeJsonFields.length, orderAttribute);
       }
 
       order.push(orderDirection);
