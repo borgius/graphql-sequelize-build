@@ -107,6 +107,9 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
+const assignWithArrayCustomizer = (a, b) => Array.isArray(a) ? a.concat(b) : b;
+const assignWithArray = (...sources) => _.assignWith(...sources, assignWithArrayCustomizer);
+
 export function sequelizeConnection({
   name,
   nodeType,
@@ -201,7 +204,7 @@ export function sequelizeConnection({
   };
 
   //build: argsToWhereWithIncludeAssociations
-  let argsToWhereWithIncludeAssociations = function (args) {
+  const argsToWhereWithIncludeAssociations = (args) => {
     const result = {
       where: {},
       include: []
@@ -239,7 +242,7 @@ export function sequelizeConnection({
   };
 
   //build: buildFindOptions
-  let buildFindOptions = function (options = {}, args, context, info) {
+  const buildFindOptions = (options = {}, args, context, info) => {
     if (args.first || args.last) {
       options.limit = parseInt(args.first || args.last, 10);
     }
@@ -248,58 +251,83 @@ export function sequelizeConnection({
 
     if (!Array.isArray(args.orderBy)) args.orderBy = [];
 
-    args.orderBy.push([model.primaryKeyAttribute, 'ASC']);//todo: remove if other fields
+    if (!args.orderBy.length) args.orderBy.push([model.primaryKeyAttribute, 'ASC']);
 
-    _.assignWith(options, args.orderBy.reduce(function (result, orderBy) {
-      if (!Array.isArray(orderBy)) throw Error('orderBy');
-      if (!orderBy.length) throw Error('orderBy');
+    assignWithArray(options, args.orderBy.reduce((result, orderBy) => {
+      if (!Array.isArray(orderBy)) throw Error(`ORDER_BY`);
+      if (!orderBy.length) throw Error(`ORDER_BY`);
 
       let orderAttribute;
       let orderDirection;
-      let orderAssociations;
+      let orderAssociationsOrJson;
 
-      var last = orderBy[orderBy.length - 1];
-      var _last = last.toUpperCase();
+      const last = orderBy[orderBy.length - 1];
 
-      if (_last == 'ASC' || _last == 'DESC') {
+      if (typeof last == 'boolean' || ['ASC', 'DESC'].includes(last.toUpperCase())) {
         orderAttribute = orderBy[orderBy.length - 2];
-        orderDirection = _last;
-        orderAssociations = orderBy.slice(0, -2);
+        orderDirection = typeof last == 'boolean' ? (last ? 'ASC' : 'DESC') : last.toUpperCase();
+        orderAssociationsOrJson = orderBy.slice(0, -2);
       } else {
         orderAttribute = last;
         orderDirection = 'ASC';
-        orderAssociations = orderBy.slice(0, -1);
+        orderAssociationsOrJson = orderBy.slice(0, -1);
       }
 
-      if (!orderAttribute) throw Error('orderBy');
-      if (!orderDirection) throw Error('orderBy');
+      if (!orderAttribute) throw Error(`ORDER_BY`);
+      if (!orderDirection) throw Error(`ORDER_BY`);
 
       if (args.last) orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
 
-      if (!options.attributes) options.attributes = [];
+      //const order = [orderAttribute, orderDirection];
+      const order = [], include = [];
+      let source = model;
 
-      if (!orderAssociations.length) options.attributes.push(orderAttribute);
+      for (const [key, value] of orderAssociationsOrJson.entries()) {
+        const association = source && Object.values(source.associations).find(association => association.as == value);//todo: if !as
 
-      return _.assignWith(result, orderAssociations.reduce(function ({order, include}, associationName, index) {
-        const source = !index ? model : order[0][index - 1].model;
+        if (association) {
+          source = association.target;
 
-        //todo: if !as
-        const association = Object.values(source.associations).find(association => association.as == associationName);
-        if (!association) throw Error('orderBy');
+          order.push({model: association.target, as: association.as});
 
-        order[0].splice(-2, 0, {model: association.target, as: association.as});
+          let associationInclude = include;
 
-        let associationInclude = include;
+          for (let i = key; i--;) {
+              associationInclude = include[0].include;
+          }
 
-        for (let i = index; i--;) {
-          associationInclude = include[0].include;
+          associationInclude.push({association, include: []});
+        } else {
+          if (source) {
+              if (!(value in source.attributes)) throw Error(`ORDER_BY`);
+
+              source = null;
+          }
+
+          order.push(value);
+        }
+      }
+
+      order.push(orderAttribute);
+
+      const orderAttributes = order.filter(i => typeof i == 'string');
+
+      if (orderAttributes.length > 1) {
+        let orderJsonAttribute = `"${orderAttributes[0]}"#>>'{${orderAttributes.slice(1).join(',')}}'`;//todo: fix sequelize.json
+
+        if (orderAttributes.length == order.length) {
+          const modelName = model.options.name.singular || model.name;
+
+          orderJsonAttribute = `"${modelName}".${orderJsonAttribute}`;
         }
 
-        associationInclude.push({association, include: []});
+        order.splice(- orderAttributes.length, orderAttributes.length, model.sequelize.literal(orderJsonAttribute));
+      }
 
-        return {order, include};
-      }, {order: [[orderAttribute, orderDirection]], include: []}), (a, b) => Array.isArray(a) ? a.concat(b) : b);
-    }, {order: [], include: []}), (a, b) => Array.isArray(a) ? a.concat(b) : b);
+      order.push(orderDirection);
+
+      return assignWithArray(result, {order: [order], include});
+    }, {order: [], include: []}));
 
     if (options.limit && !options.attributes.some(attribute => attribute.length === 2 && attribute[1] === 'full_count')) {
       if (model.sequelize.dialect.name === 'postgres') {
@@ -316,7 +344,7 @@ export function sequelizeConnection({
     }
 
     //build: argsToWhereWithIncludeAssociations
-    _.assignWith(options, argsToWhereWithIncludeAssociations(args), (a, b) => Array.isArray(a) ? a.concat(b) : b);
+    assignWithArray(options, argsToWhereWithIncludeAssociations(args));
     options.required = false;
 
     if (args.after || args.before) {
