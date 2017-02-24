@@ -245,6 +245,8 @@ export function sequelizeConnection({
   const buildFindOptions = (options = {}, args, context, info) => {
     const modelName = model.options.name.singular || model.name;
 
+    if (!Array.isArray(options.attributes)) options.attributes = [];
+
     if (args.first || args.last) {
       options.limit = parseInt(args.first || args.last, 10);
     }
