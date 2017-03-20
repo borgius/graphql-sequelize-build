@@ -456,14 +456,14 @@ export function sequelizeConnection({
         args,
         ...context.findOptions,//build: context.findOptions
         edges,
-        fullCount,//build: fullCount
         pageInfo: {
           startCursor: firstEdge ? firstEdge.cursor : null,
           endCursor: lastEdge ? lastEdge.cursor : null,
           hasNextPage: hasNextPage,
           hasPreviousPage: hasPreviousPage
-        }
-      });
+        },
+        fullCount
+      }, args, context, info);
     }
   });
 
