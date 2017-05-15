@@ -6,6 +6,7 @@ import {
    GraphQLEnumType,
    GraphQLList
  } from 'graphql';
+import JSONType from './types/jsonType';
 
 let customTypeMapper;
 /**
@@ -50,8 +51,9 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     DATEONLY,
     TIME,
     ARRAY,
-    RANGE,
-    VIRTUAL
+    VIRTUAL,
+    JSON,
+    RANGE
   } = sequelizeTypes;
 
 
@@ -85,15 +87,9 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     return new GraphQLList(elementType);
   }
 
-  //build: map RANGE
-  if (sequelizeType instanceof RANGE) {
-    let elementType = toGraphQL(sequelizeType.options.subtype, sequelizeTypes);
-    return new GraphQLList(elementType);
-  }
-
   if (sequelizeType instanceof ENUM) {
     return new GraphQLEnumType({
-      name: 'ENUM',//build: fake name for js graphql bug
+      name: 'tempEnumName',
       values: sequelizeType.values.reduce((obj, value) => {
         let sanitizedValue = value;
         if (specialChars.test(value)) {
@@ -105,10 +101,12 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
             return `${reduced}${newVal}`;
           });
         }
+
         //build: fix sanitizedValue
         if (!isNaN(sanitizedValue[0])) {
           sanitizedValue = '_' + sanitizedValue;
         }
+
         obj[sanitizedValue] = {value};
         return obj;
       }, {})
@@ -120,6 +118,16 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
         ? toGraphQL(sequelizeType.returnType, sequelizeTypes)
         : GraphQLString;
     return returnType;
+  }
+
+  if (sequelizeType instanceof JSON) {
+    return JSONType;
+  }
+
+  //build: map RANGE
+  if (sequelizeType instanceof RANGE) {
+    let elementType = toGraphQL(sequelizeType.options.subtype, sequelizeTypes);
+    return new GraphQLList(elementType);
   }
 
   throw new Error(`Unable to convert ${sequelizeType.key || sequelizeType.toSql()} to a GraphQL type`);

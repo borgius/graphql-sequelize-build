@@ -1,19 +1,21 @@
-import resolver from './resolver';
-import defaultListArgs from './defaultListArgs';
-import defaultArgs from './defaultArgs';
-import * as typeMapper from './typeMapper';
-import attributeFields from './attributeFields';
-import simplifyAST from './simplifyAST';
 import * as relay from './relay';
+import * as typeMapper from './typeMapper';
+import argsToFindOptions from './argsToFindOptions';
+import attributeFields from './attributeFields';
+import defaultArgs from './defaultArgs';
+import defaultListArgs from './defaultListArgs';
 import JSONType from './types/jsonType';
+import resolver from './resolver';
+import simplifyAST from './simplifyAST';
 
 export {
-    resolver,
-    defaultListArgs,
-    defaultArgs,
-    typeMapper,
-    attributeFields,
-    simplifyAST,
-    relay,
-    JSONType
+  argsToFindOptions,
+  resolver,
+  defaultListArgs,
+  defaultArgs,
+  typeMapper,
+  attributeFields,
+  simplifyAST,
+  relay,
+  JSONType
 };
