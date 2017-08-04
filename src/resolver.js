@@ -18,7 +18,7 @@ function resolverFactory(target, options) {
 
   options = options || {};
 
-  if (options.include === undefined) options.include = true;
+  if (options.include === undefined) options.include = false;
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
