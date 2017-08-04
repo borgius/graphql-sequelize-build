@@ -1,21 +1,10 @@
 import { GraphQLList } from 'graphql';
-import argsToFindOptions from './argsToFindOptions';
-import { isConnection, handleConnection, nodeAST, nodeType } from './relay';
-import invariant from 'assert';
 import _ from 'lodash';
+import argsToFindOptions from './argsToFindOptions';
+import { isConnection, handleConnection, nodeType, nodeAST } from './relay';
+import invariant from 'assert';
 import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
-
-function inList(list, attribute) {
-  return ~list.indexOf(attribute);
-}
-
-function validateOptions(options) {
-  invariant(
-    !options.defaultAttributes || Array.isArray(options.defaultAttributes),
-    'options.defaultAttributes must be an array of field names.'
-  );
-}
 
 function resolverFactory(target, options) {
   var resolver
@@ -37,8 +26,6 @@ function resolverFactory(target, options) {
   //build: for scoped associations
   if (isAssociation && model.scoped) options.required = false;
 
-  validateOptions(options);
-
   resolver = function (source, args, context, info) {
     var ast = info.fieldASTs || info.fieldNodes
       , type = info.returnType
@@ -55,7 +42,7 @@ function resolverFactory(target, options) {
 
     context = context || {};
 
-    if (isConnection(info.returnType)) {
+    if (isConnection(type)) {
       type = nodeType(type);
       simpleAST = nodeAST(simpleAST);
       fields = simpleAST.fields;
@@ -79,7 +66,7 @@ function resolverFactory(target, options) {
     if (options.filterAttributes) {
       findOptions.attributes = Object.keys(fields)
         .map(key => fields[key].key || key)
-        .filter(inList.bind(null, targetAttributes));
+        .filter(key => targetAttributes.includes(key));
 
       if (options.defaultAttributes) {
         findOptions.attributes = findOptions.attributes.concat(options.defaultAttributes);
@@ -97,13 +84,12 @@ function resolverFactory(target, options) {
       type,
       context,
       options
-    ).then(function (includeResult) {
+    ).then((includeResult) => {
       findOptions.include = includeResult.include;
       if (includeResult.order) {
         findOptions.order = (findOptions.order || []).concat(includeResult.order);
       }
       findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
-
       findOptions.root = context;
       findOptions.context = context;
       findOptions.logging = findOptions.logging || context.logging;
@@ -114,9 +100,9 @@ function resolverFactory(target, options) {
         type: type,
         source: source
       });
-    }).then(function (findOptions) {
+    }).then((findOptions) => {
       if (list && !findOptions.order) {
-        findOptions.order = [model.primaryKeyAttribute, 'ASC'];
+        findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
       }
 
       //build: deduplicate include associations
@@ -144,7 +130,7 @@ function resolverFactory(target, options) {
       context.findOptions = findOptions;
 
       if (association) {
-        return source[association.accessors.get](findOptions).then(function (result) {
+        return source[association.accessors.get](findOptions).then((result) => {
           if (options.handleConnection && isConnection(info.returnType)) {
             return handleConnection(result, args);
           }
@@ -153,20 +139,17 @@ function resolverFactory(target, options) {
       }
 
       return model[list ? 'findAll' : 'findOne'](findOptions);
-    }).then(function (result) {
-      return options.after(result, args, context, {
+    }).then((result) =>
+      options.after(result, args, context, {
         ...info,
         ast: simpleAST,
         type: type,
         source: source
-      });
-    });
+      })
+    );
   };
 
-  if (association) {
-    resolver.$association = association;
-  }
-
+  if (association) resolver.$association = association;
   resolver.$before = options.before;
   resolver.$after = options.after;
   resolver.$options = options;

@@ -20,6 +20,7 @@ import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 import resolverFactory from './resolver.js';
 import JSONType from './types/jsonType.js';
+import {assignWithArray} from './helpers';
 
 export class NodeTypeMapper {
   constructor() {
@@ -109,9 +110,6 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
-const assignWithArrayCustomizer = (a, b) => Array.isArray(a) ? a.concat(b) : b;
-const assignWithArray = (...sources) => _.assignWith(...sources, assignWithArrayCustomizer);
-
 export function sequelizeConnection({
   name,
   nodeType,
@@ -139,9 +137,7 @@ export function sequelizeConnection({
   const PREFIX = 'arrayconnection' + SEPERATOR;
 
   //build: orderByType
-  if (orderByType === undefined) {
-    orderByType = JSONType;
-  }
+  if (orderByType === undefined) orderByType = JSONType;
 
   before = before || ((options) => options);
   after = after || ((result) => result);
@@ -152,19 +148,6 @@ export function sequelizeConnection({
     orderBy: {
       type: orderByType//build: orderByType
     }
-  };
-
-  let orderByAttribute = function (orderAttr, {source, args, context, info}) {
-    return typeof orderAttr === 'function' ? orderAttr(source, args, context, info) : orderAttr;
-  };
-
-  let orderByDirection = function (orderDirection, args) {
-    if (args.last) {
-      return orderDirection.indexOf('ASC') >= 0
-              ? orderDirection.replace('ASC', 'DESC')
-              : orderDirection.replace('DESC', 'ASC');
-    }
-    return orderDirection;
   };
 
   /**
@@ -192,17 +175,6 @@ export function sequelizeConnection({
       id,
       index
     };
-  };
-
-  let argsToWhere = function (args) {
-    let result = {};
-
-    _.each(args, (value, key) => {
-      if (key in $connectionArgs) return;
-      _.assign(result, where(key, value, result));
-    });
-
-    return result;
   };
 
   //build: argsToWhereWithIncludeAssociations
@@ -284,7 +256,6 @@ export function sequelizeConnection({
 
       if (args.last) orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
 
-      //const order = [orderAttribute, orderDirection];
       const order = [], include = [];
       let source = model;
 
@@ -298,9 +269,7 @@ export function sequelizeConnection({
 
           let associationInclude = include;
 
-          for (let i = key; i--;) {
-              associationInclude = include[0].include;
-          }
+          for (let i = key; i--;) associationInclude = include[0].include;
 
           associationInclude.push({association, include: []});
         } else {

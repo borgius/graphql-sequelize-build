@@ -6,23 +6,16 @@ const GRAPHQL_NATIVE_KEYS = [
   '__typename',
 ];
 
-function inList(list, attribute) {
-  return ~list.indexOf(attribute);
-}
-
-export default function generateIncludes(simpleAST, type, context, options) {
-  var result = {include: [], attributes: [], order: []};
+const generateIncludes = (simpleAST, type, context, options) => {
+  const result = {include: [], attributes: [], order: []};
 
   type = type.ofType || type;
   options = options || {};
 
-  return Promise.all(Object.keys(simpleAST.fields).map(function (key) {
-    if (inList(GRAPHQL_NATIVE_KEYS, key)) {
-      // Skip native grahphql keys
-      return;
-    }
+  return Promise.all(Object.keys(simpleAST.fields).map((key) => {
+    if (GRAPHQL_NATIVE_KEYS.includes(key)) return; // Skip native grahphql keys
 
-    var association
+    let association
       , fieldAST = simpleAST.fields[key]
       , name = fieldAST.key || key
       , fieldType = type._fields[name] && type._fields[name].type
@@ -45,10 +38,7 @@ export default function generateIncludes(simpleAST, type, context, options) {
       fieldType = nodeType(fieldType);
     }
 
-    if (!fieldAST) {
-      // No point in including if no fields have been asked for
-      return;
-    }
+    if (!fieldAST) return; // No point in including if no fields have been asked for
 
     if (includeResolver.$passthrough) {
       return generateIncludes(
@@ -56,7 +46,7 @@ export default function generateIncludes(simpleAST, type, context, options) {
         fieldType,
         context,
         options
-      ).then(function (dummyResult) {
+      ).then((dummyResult) => {
         result.include = result.include.concat(dummyResult.include);
         result.attributes = result.attributes.concat(dummyResult.attributes);
         result.order = result.order.concat(dummyResult.order);
@@ -73,12 +63,12 @@ export default function generateIncludes(simpleAST, type, context, options) {
       if (options.filterAttributes) {
         includeOptions.attributes = (includeOptions.attributes || [])
           .concat(Object.keys(fieldAST.fields).map(key => fieldAST.fields[key].key || key))
-          .filter(inList.bind(null, allowedAttributes));
+          .filter(key => allowedAttributes.includes(key));
       } else {
         includeOptions.attributes = allowedAttributes;
       }
 
-      return Promise.resolve().then(function () {
+      return Promise.resolve().then(() => {
         if (includeResolver.$before) {
           return includeResolver.$before(includeOptions, args, context, {
             ast: fieldAST,
@@ -86,7 +76,7 @@ export default function generateIncludes(simpleAST, type, context, options) {
           });
         }
         return includeOptions;
-      }).then(function (includeOptions) {
+      }).then((includeOptions) => {
         if (association.associationType === 'BelongsTo') {
           result.attributes.push(association.foreignKey);
         } else if (association.source.primaryKeyAttribute) {
@@ -101,7 +91,7 @@ export default function generateIncludes(simpleAST, type, context, options) {
 
         if (include && (!includeOptions.limit || separate)) {
           if (includeOptions.order && !separate) {
-            includeOptions.order.map(function (order) {
+            includeOptions.order.map((order) => {
               order.unshift({
                 model: association.target,
                 as: association.options.as
@@ -127,7 +117,7 @@ export default function generateIncludes(simpleAST, type, context, options) {
             fieldType,
             context,
             includeResolver.$options
-          ).then(function (nestedResult) {
+          ).then((nestedResult) => {
             includeOptions.include = (includeOptions.include || []).concat(nestedResult.include);
             includeOptions.attributes = _.uniq(includeOptions.attributes.concat(nestedResult.attributes));
 
@@ -144,7 +134,7 @@ export default function generateIncludes(simpleAST, type, context, options) {
         }
       });
     }
-  })).then(function () {
-    return result;
-  });
-}
+  })).then(() => result);
+};
+
+export default generateIncludes;
