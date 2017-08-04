@@ -6,11 +6,10 @@ const GRAPHQL_NATIVE_KEYS = [
   '__typename',
 ];
 
-const generateIncludes = (simpleAST, type, context, options) => {
+const generateIncludes = (simpleAST, type, context, options = {}) => {
   const result = {include: [], attributes: [], order: []};
 
   type = type.ofType || type;
-  options = options || {};
 
   return Promise.all(Object.keys(simpleAST.fields).map((key) => {
     if (GRAPHQL_NATIVE_KEYS.includes(key)) return; // Skip native grahphql keys
