@@ -58,14 +58,7 @@ const generateIncludes = (simpleAST, type, context, options = {}) => {
     if (association) {
       allowedAttributes = Object.keys(association.target.rawAttributes);
       includeOptions = argsToFindOptions(args, allowedAttributes);
-
-      if (options.filterAttributes) {
-        includeOptions.attributes = (includeOptions.attributes || [])
-          .concat(Object.keys(fieldAST.fields).map(key => fieldAST.fields[key].key || key))
-          .filter(key => allowedAttributes.includes(key));
-      } else {
-        includeOptions.attributes = allowedAttributes;
-      }
+      includeOptions.attributes = allowedAttributes;
 
       return Promise.resolve().then(() => {
         if (includeResolver.$before) {

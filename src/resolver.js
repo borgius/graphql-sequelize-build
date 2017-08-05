@@ -6,6 +6,24 @@ import invariant from 'assert';
 import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
 
+const deduplicateInclude = (result, value) => {
+  const existed = result.find((i) => i.association == value.association && i.as == value.as);
+
+  if (existed) {
+    value = _.assignWith(existed, value, (a, b) =>
+      Array.isArray(a) ?
+        a.concat(b) :
+        (a && b && typeof a == 'object' && typeof b == 'object' ? Object.assign(a, b) : b)
+    );
+  } else {
+    result.push(value);
+  }
+
+  if (Array.isArray(value.include)) value.include = value.include.reduce(deduplicateInclude, []);
+
+  return result;
+};
+
 function resolverFactory(target, options) {
   var resolver
     , targetAttributes
@@ -22,16 +40,13 @@ function resolverFactory(target, options) {
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
-  if (options.filterAttributes === undefined) options.filterAttributes = resolverFactory.filterAttributes;
-  //build: for scoped associations
-  if (isAssociation && model.scoped) options.required = false;
+  if (isAssociation && model.scoped) options.required = false; //build: for scoped associations
 
   resolver = function (source, args, context, info) {
     var ast = info.fieldASTs || info.fieldNodes
       , type = info.returnType
       , list = options.list || type instanceof GraphQLList
       , simpleAST = simplifyAST(ast, info)
-      , fields = simpleAST.fields
       , findOptions = argsToFindOptions(args, targetAttributes);
 
     info = {
@@ -45,7 +60,6 @@ function resolverFactory(target, options) {
     if (isConnection(type)) {
       type = nodeType(type);
       simpleAST = nodeAST(simpleAST);
-      fields = simpleAST.fields;
     }
 
     type = type.ofType || type;
@@ -53,31 +67,20 @@ function resolverFactory(target, options) {
     if (association && source.get(association.as) !== undefined) {
       if (options.handleConnection && isConnection(info.returnType)) {
         return handleConnection(source.get(association.as), args);
+      } else {
+        return options.after(source.get(association.as), args, context, {
+          ...info,
+          ast: simpleAST,
+          type: type,
+          source: source
+        });
       }
-
-      return options.after(source.get(association.as), args, context, {
-        ...info,
-        ast: simpleAST,
-        type: type,
-        source: source
-      });
     }
 
-    if (options.filterAttributes) {
-      findOptions.attributes = Object.keys(fields)
-        .map(key => fields[key].key || key)
-        .filter(key => targetAttributes.includes(key));
+    findOptions.attributes = targetAttributes;
+    findOptions.logging = findOptions.logging || context.logging;
 
-      if (options.defaultAttributes) {
-        findOptions.attributes = findOptions.attributes.concat(options.defaultAttributes);
-      }
-    } else {
-      findOptions.attributes = targetAttributes;
-    }
-
-    if (model.primaryKeyAttribute) {
-      findOptions.attributes.push(model.primaryKeyAttribute);
-    }
+    if (model.primaryKeyAttribute) findOptions.attributes.push(model.primaryKeyAttribute);
 
     return generateIncludes(
       simpleAST,
@@ -105,37 +108,27 @@ function resolverFactory(target, options) {
         findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
       }
 
-      //build: deduplicate include associations
-      if (Array.isArray(findOptions.include)) {
-        findOptions.include = findOptions.include.reduce(function deduplicateInclude(result, value) {
-          const existed = result.find((i) => i.association == value.association && i.as == value.as);
+      if (Array.isArray(findOptions.include)) findOptions.include = findOptions.include.reduce(deduplicateInclude, []); //build: deduplicate include associations
 
-          if (existed) {
-            value = _.assignWith(existed, value, (a, b) =>
-              Array.isArray(a) ?
-                a.concat(b) :
-                (a && b && typeof a == 'object' && typeof b == 'object' ? Object.assign(a, b) : b)
-            );
-          } else {
-            result.push(value);
-          }
-
-          if (value.include) value.include = value.include.reduce(deduplicateInclude, []);
-
-          return result;
-        }, []);
-      }
-
-      //build: context.findOptions
-      context.findOptions = findOptions;
+      context.findOptions = findOptions; //build: context.findOptions
 
       if (association) {
-        return source[association.accessors.get](findOptions).then((result) => {
+        if (source.get(association.as) !== undefined) {
+          // The user did a manual include
+          const result = source.get(association.as);
           if (options.handleConnection && isConnection(info.returnType)) {
             return handleConnection(result, args);
           }
+
           return result;
-        });
+        } else {
+          return source[association.accessors.get](findOptions).then((result) => {
+            if (options.handleConnection && isConnection(info.returnType)) {
+              return handleConnection(result, args);
+            }
+            return result;
+          });
+        }
       }
 
       return model[list ? 'findAll' : 'findOne'](findOptions);
@@ -156,7 +149,5 @@ function resolverFactory(target, options) {
 
   return resolver;
 }
-
-resolverFactory.filterAttributes = true;
 
 export default resolverFactory;
