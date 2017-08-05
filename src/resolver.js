@@ -42,7 +42,7 @@ function resolverFactory(target, options) {
   if (options.handleConnection === undefined) options.handleConnection = true;
   if (isAssociation && model.scoped) options.required = false; //build: for scoped associations
 
-  resolver = function (source, args, context, info) {
+  resolver = async (source, args, context, info) => {
     var ast = info.fieldASTs || info.fieldNodes
       , type = info.returnType
       , list = options.list || type instanceof GraphQLList
@@ -82,28 +82,21 @@ function resolverFactory(target, options) {
 
     if (model.primaryKeyAttribute) findOptions.attributes.push(model.primaryKeyAttribute);
 
-    return generateIncludes(
-      simpleAST,
-      type,
-      context,
-      options
-    ).then((includeResult) => {
-      findOptions.include = includeResult.include;
-      if (includeResult.order) {
-        findOptions.order = (findOptions.order || []).concat(includeResult.order);
-      }
-      findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
-      findOptions.root = context;
-      findOptions.context = context;
-      findOptions.logging = findOptions.logging || context.logging;
+    const includeResult = await generateIncludes(simpleAST, type, context, options);
 
-      return options.before(findOptions, args, context, {
-        ...info,
-        ast: simpleAST,
-        type: type,
-        source: source
-      });
-    }).then((findOptions) => {
+    findOptions.include = includeResult.include;
+    if (includeResult.order) findOptions.order = (findOptions.order || []).concat(includeResult.order);
+    findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
+    findOptions.root = context;
+    findOptions.context = context;
+    findOptions.logging = findOptions.logging || context.logging;
+
+    const result = await Promise.resolve(options.before(findOptions, args, context, {
+      ...info,
+      ast: simpleAST,
+      type: type,
+      source: source
+    })).then((findOptions) => {
       if (list && !findOptions.order) {
         findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
       }
@@ -132,14 +125,14 @@ function resolverFactory(target, options) {
       }
 
       return model[list ? 'findAll' : 'findOne'](findOptions);
-    }).then((result) =>
-      options.after(result, args, context, {
-        ...info,
-        ast: simpleAST,
-        type: type,
-        source: source
-      })
-    );
+    });
+
+    return options.after(result, args, context, {
+      ...info,
+      ast: simpleAST,
+      type: type,
+      source: source
+    });
   };
 
   if (association) resolver.$association = association;
