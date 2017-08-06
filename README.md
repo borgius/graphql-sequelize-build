@@ -1,4 +1,4 @@
-[graphql-sequelize](https://github.com/mickhansen/graphql-sequelize) v5.3.2
+[graphql-sequelize](https://github.com/mickhansen/graphql-sequelize) v5.4.2
 
 ### Differences
 - target engine node version ^7.0.0
