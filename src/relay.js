@@ -114,6 +114,7 @@ export function sequelizeConnection({
   name,
   nodeType,
   target,
+  include,//build: resolver include
   orderBy: orderByType,//build: orderByType
   before,
   handleResult,//build: handleResult
@@ -136,8 +137,7 @@ export function sequelizeConnection({
   const SEPERATOR = '$';
   const PREFIX = 'arrayconnection' + SEPERATOR;
 
-  //build: orderByType
-  if (orderByType === undefined) orderByType = JSONType;
+  if (orderByType === undefined) orderByType = JSONType; //build: orderByType
 
   before = before || ((options) => options);
   after = after || ((result) => result);
@@ -353,8 +353,8 @@ export function sequelizeConnection({
 
   //build: resolverFactory
   let $resolver = resolverFactory(target, {
+    include,
     handleConnection: false,
-    include: true,
     list: true,
     before: function (options, args, context, info) {
       options = buildFindOptions(options, args, context, info);
@@ -362,8 +362,7 @@ export function sequelizeConnection({
       return before(options, args, context, info);
     },
     after: async function (values, args, context, info) {
-      //build: handleResult
-      values = await Promise.resolve(handleResult(values, args, context, info));
+      values = await Promise.resolve(handleResult(values, args, context, info)); //build: handleResult
 
       const {
         source,
@@ -389,8 +388,7 @@ export function sequelizeConnection({
 
       if ((args.first || args.last) && (fullCount === null || fullCount === undefined)) {
         // In case of `OVER()` is not available, we need to get the full count from a second query.
-        //build: context.findOptions
-        const options = context.findOptions;
+        const options = context.findOptions; //build: context.findOptions
 
         if (target.count) {
           if (target.associationType) {
