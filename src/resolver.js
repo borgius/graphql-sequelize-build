@@ -2,9 +2,9 @@ import { GraphQLList } from 'graphql';
 import _ from 'lodash';
 import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeType, nodeAST } from './relay';
-import invariant from 'assert';
 import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
+import dataLoaderSequelize from 'dataloader-sequelize';
 
 const deduplicateInclude = (result, value) => {
   const existed = result.find((i) => i.association == value.association && i.as == value.as);
@@ -25,6 +25,8 @@ const deduplicateInclude = (result, value) => {
 };
 
 function resolverFactory(target, options) {
+  dataLoaderSequelize(target);
+
   var resolver
     , targetAttributes
     , isModel = !!target.getTableName
