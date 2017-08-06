@@ -1,6 +1,6 @@
 {
   "name": "graphql-sequelize-build",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "GraphQL & Relay for MySQL & Postgres via Sequelize",
   "engines": {
     "node": "^7.0.0"

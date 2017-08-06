@@ -6,6 +6,16 @@ import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
 import dataLoaderSequelize from 'dataloader-sequelize';
 
+function whereQueryVarsToValues(o, vals) {
+  _.forEach(o, (v, k) => {
+    if (typeof v === 'function') {
+      o[k] = o[k](vals);
+    } else if (v && typeof v === 'object') {
+      whereQueryVarsToValues(v, vals);
+    }
+  });
+}
+
 const deduplicateInclude = (result, value) => {
   const existed = result.find((i) => i.association == value.association && i.as == value.as);
 
@@ -79,6 +89,11 @@ function resolverFactory(target, options) {
     }
 
     return Promise.resolve(options.before(findOptions, args, context, info)).then((findOptions) => {
+      if (args.where && !_.isEmpty(info.variableValues)) {
+        whereQueryVarsToValues(args.where, info.variableValues);
+        whereQueryVarsToValues(findOptions.where, info.variableValues);
+      }
+
       if (list && !findOptions.order) {
         findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
       }
