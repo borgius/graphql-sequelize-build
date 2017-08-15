@@ -34,8 +34,8 @@ const deduplicateInclude = (result, value) => {
   return result;
 };
 
-function resolverFactory(target, options) {
-  dataLoaderSequelize(target);
+function resolverFactory(target, options = {}) {
+  if (options.useDataLoader !== false) dataLoaderSequelize(target);
 
   var resolver
     , targetAttributes
@@ -45,8 +45,6 @@ function resolverFactory(target, options) {
     , model = isAssociation && target.target || isModel && target;
 
   targetAttributes = Object.keys(model.rawAttributes);
-
-  options = options || {};
 
   if (options.include === undefined) options.include = false;
   if (options.before === undefined) options.before = (options) => options;

@@ -115,6 +115,7 @@ export function sequelizeConnection({
   nodeType,
   target,
   include,//build: resolver include
+  useDataLoader,//build: resolver useDataLoader
   orderBy: orderByType,//build: orderByType
   before,
   handleResult,//build: handleResult
@@ -354,6 +355,7 @@ export function sequelizeConnection({
   //build: resolverFactory
   let $resolver = resolverFactory(target, {
     include,
+    useDataLoader,
     handleConnection: false,
     list: true,
     before: function (options, args, context, info) {
