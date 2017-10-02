@@ -34,6 +34,12 @@ const deduplicateInclude = (result, value) => {
   return result;
 };
 
+const fixIncludeOffset = (include) => {
+  if (include.offset === undefined) include.offset = null;
+
+  if (Array.isArray(include.include)) include.include.forEach(fixIncludeOffset);
+};
+
 function resolverFactory(target, options = {}) {
   if (options.useDataLoader !== false) dataLoaderSequelize(target);
 
@@ -98,6 +104,8 @@ function resolverFactory(target, options = {}) {
 
       if (Array.isArray(findOptions.include)) {
         findOptions.include = findOptions.include.reduce(deduplicateInclude, []); //build: deduplicate include associations
+
+        findOptions.include.forEach(fixIncludeOffset); //build: fix include offset bug
 
         if (!findOptions.include.length) delete findOptions.include;
       }
