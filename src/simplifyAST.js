@@ -23,7 +23,10 @@ function hasFragments(info) {
 }
 
 function isFragment(info, ast) {
-  return hasFragments(info) && info.fragments[ast.name.value] && ast.kind !== 'FragmentDefinition';
+  return hasFragments(info) &&
+    ast.name &&
+    info.fragments[ast.name.value] &&
+    ast.kind !== 'FragmentDefinition';
 }
 
 function simplifyObjectValue(objectValue) {
@@ -48,7 +51,7 @@ function simplifyValue(value, info) {
   if (value.kind === 'ObjectValue') {
     return simplifyObjectValue(value);
   }
-  if (value.name) {
+  if (value.name && info.variableValues) {
     return info.variableValues[value.name.value];
   }
 }

@@ -7,6 +7,7 @@ import {
    GraphQLList
  } from 'graphql';
 import JSONType from './types/jsonType';
+import _ from 'lodash';
 
 let customTypeMapper;
 /**
@@ -56,10 +57,12 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     RANGE
   } = sequelizeTypes;
 
-
-
-  // Regex for finding special characters
-  const specialChars = /[^a-z\d_]/i;
+  // Map of special characters
+  const specialCharsMap = new Map([
+    ['¼', 'frac14'],
+    ['½', 'frac12'],
+    ['¾', 'frac34']
+  ]);
 
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
 
@@ -90,26 +93,10 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof ENUM) {
     return new GraphQLEnumType({
       name: 'tempEnumName',
-      values: sequelizeType.values.reduce((obj, value) => {
-        let sanitizedValue = value;
-        if (specialChars.test(value)) {
-          sanitizedValue = value.split(specialChars).reduce((reduced, val, idx) => {
-            let newVal = val;
-            if (idx > 0) {
-              newVal = `${val[0].toUpperCase()}${val.slice(1)}`;
-            }
-            return `${reduced}${newVal}`;
-          });
-        }
-
-        //build: fix sanitizedValue
-        if (!isNaN(sanitizedValue[0])) {
-          sanitizedValue = '_' + sanitizedValue;
-        }
-
-        obj[sanitizedValue] = {value};
-        return obj;
-      }, {})
+      values: _(sequelizeType.values)
+        .mapKeys(sanitizeEnumValue)
+        .mapValues(v => ({value: v}))
+        .value()
     });
   }
 
@@ -132,4 +119,13 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
 
   throw new Error(`Unable to convert ${sequelizeType.key || sequelizeType.toSql()} to a GraphQL type`);
 
+  function sanitizeEnumValue(value) {
+    return value
+      .trim()
+      .replace(/([^_a-zA-Z0-9])/g, (_, p) => specialCharsMap.get(p) || ' ')
+      .split(' ')
+      .map((v, i) => i ? _.upperFirst(v) : v)
+      .join('')
+      .replace(/(^\d)/, '_$1');
+  }
 }
