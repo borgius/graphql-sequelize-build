@@ -18,7 +18,7 @@ export function mapType(mapFunc) {
   customTypeMapper = mapFunc;
 }
 
-
+let tempEnumNameCounter = 0;
 /**
  * Checks the type of the sequelize data type and
  * returns the corresponding type in GraphQL
@@ -92,7 +92,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
 
   if (sequelizeType instanceof ENUM) {
     return new GraphQLEnumType({
-      name: 'tempEnumName',
+      name: 'tempEnumName' + ++tempEnumNameCounter,
       values: _(sequelizeType.values)
         .mapKeys(sanitizeEnumValue)
         .mapValues(v => ({value: v}))
