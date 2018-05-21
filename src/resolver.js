@@ -4,7 +4,6 @@ import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeType, nodeAST } from './relay';
 import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
-import dataLoaderSequelize from 'dataloader-sequelize';
 
 function whereQueryVarsToValues(o, vals) {
   _.forEach(o, (v, k) => {
@@ -41,10 +40,6 @@ const fixIncludeOffset = (include) => {
 };
 
 function resolverFactory(target, options = {}) {
-  if (options.dataLoader !== false) {
-    dataLoaderSequelize(target);
-  }
-
   var resolver
     , targetAttributes
     , isModel = !!target.getTableName

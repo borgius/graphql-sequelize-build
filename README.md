@@ -3,7 +3,6 @@
 ### Differences
 - target engine node version ^7.0.0
 - resolver: generate includes if `options.include` is true
-- resolver: use `dataloader-sequelize` if `options.include` is false or includes is not defined
 - TypeMapper: support RANGE type
 - relay connection: order by `JSONType`
 - relay connection: `handleResult` hook
