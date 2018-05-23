@@ -16,13 +16,13 @@ function whereQueryVarsToValues(o, vals) {
 }
 
 const deduplicateInclude = (result, value) => {
-  const existed = result.find((i) => i.association == value.association && i.as == value.as);
+  const existed = result.find((i) => i.association === value.association && i.as == value.as);
 
   if (existed) {
     value = _.assignWith(existed, value, (a, b) =>
       Array.isArray(a) ?
         a.concat(b) :
-        (a && b && typeof a == 'object' && typeof b == 'object' ? Object.assign(a, b) : b)
+        (a && b && typeof a === 'object' && typeof b === 'object' ? Object.assign(a, b) : b)
     );
   } else {
     result.push(value);

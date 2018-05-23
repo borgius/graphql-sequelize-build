@@ -114,7 +114,7 @@ const generateIncludes = (simpleAST, type, context, options = {}) => {
             includeOptions.attributes = _.uniq(includeOptions.attributes.concat(nestedResult.attributes));
 
             //build: required option: if set true or undefined && where - INNER JOIN else - LEFT OUTER JOIN
-            if (includeResolver.$options && typeof includeResolver.$options.required == 'boolean') {
+            if (includeResolver.$options && typeof includeResolver.$options.required === 'boolean') {
               includeOptions.required = includeResolver.$options.required;
             }
 

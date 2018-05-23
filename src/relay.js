@@ -241,9 +241,9 @@ export function sequelizeConnection({
 
       const last = orderBy[orderBy.length - 1];
 
-      if (typeof last == 'boolean' || ['ASC', 'DESC'].includes(last.toUpperCase())) {
+      if (typeof last === 'boolean' || ['ASC', 'DESC'].includes(last.toUpperCase())) {
         orderAttribute = orderBy[orderBy.length - 2];
-        orderDirection = typeof last == 'boolean' ? (last ? 'ASC' : 'DESC') : last.toUpperCase();
+        orderDirection = typeof last === 'boolean' ? (last ? 'ASC' : 'DESC') : last.toUpperCase();
         orderAssociationsOrJson = orderBy.slice(0, -2);
       } else {
         orderAttribute = last;
@@ -293,12 +293,12 @@ export function sequelizeConnection({
         orderAttribute =
           `"${orderAttributeContainsName}"${orderAttributeContainsOperator}ARRAY[${orderAttributeContainsValues}]::varchar[]`;
 
-        if (order.every(i => typeof i == 'string')) orderAttribute = `"${modelName}".${orderAttribute}`;
+        if (order.every(i => typeof i === 'string')) orderAttribute = `"${modelName}".${orderAttribute}`;
 
         orderAttribute = model.sequelize.literal(orderAttribute);
       }
 
-      const orderAttributeJsonFields = order.filter(i => typeof i == 'string');
+      const orderAttributeJsonFields = order.filter(i => typeof i === 'string');
 
       order.push(orderAttribute);
 
@@ -310,7 +310,7 @@ export function sequelizeConnection({
 
         orderAttribute = `"${orderAttributeJsonName}"#>>'{${orderAttributeJsonValues}}'`;//todo: fix sequelize.json
 
-        if (orderAttributeJsonFields.length == order.length) orderAttribute = `"${modelName}".${orderAttribute}`;
+        if (orderAttributeJsonFields.length === order.length) orderAttribute = `"${modelName}".${orderAttribute}`;
 
         orderAttribute = model.sequelize.literal(orderAttribute);
 
