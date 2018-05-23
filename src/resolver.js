@@ -40,6 +40,8 @@ const fixIncludeOffset = (include) => {
 };
 
 function resolverFactory(target, options = {}) {
+  const contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions);
+
   var resolver
     , targetAttributes
     , isModel = !!target.getTableName
@@ -93,6 +95,10 @@ function resolverFactory(target, options = {}) {
       findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
     }
 
+    _.each(contextToOptions, (as, key) => {
+      findOptions[as] = context[key];
+    });
+
     return Promise.resolve(options.before(findOptions, args, context, info)).then(function (findOptions) {
       if (args.where && !_.isEmpty(info.variableValues)) {
         whereQueryVarsToValues(args.where, info.variableValues);
@@ -145,5 +151,7 @@ function resolverFactory(target, options = {}) {
 
   return resolver;
 }
+
+resolverFactory.contextToOptions = {};
 
 export default resolverFactory;

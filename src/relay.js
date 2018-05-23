@@ -118,7 +118,7 @@ export function nodeType(connectionType) {
 export function sequelizeConnection({
   name,
   nodeType,
-  target,
+  target: targetMaybeThunk,
   include,//build: resolver include
   orderBy: orderByType,//build: orderByType
   before,
@@ -137,8 +137,6 @@ export function sequelizeConnection({
     connectionFields,
     edgeFields
   });
-
-  const model = target.target ? target.target : target;
 
   if (orderByType === undefined) orderByType = JSONType; //build: orderByType
 
@@ -219,6 +217,8 @@ export function sequelizeConnection({
 
   //build: buildFindOptions
   const buildFindOptions = (options = {}, args, context, info) => {
+    const target = info.target || targetMaybeThunk;//todo: resolve targetMaybeThunk
+    const model = target.target ? target.target : target;
     const modelName = model.options.name.singular || model.name;
 
     if (!Array.isArray(options.attributes)) options.attributes = [];
@@ -234,8 +234,8 @@ export function sequelizeConnection({
     if (!args.orderBy.length) args.orderBy.push([model.primaryKeyAttribute, 'ASC']);
 
     assignWithArray(options, args.orderBy.reduce((result, orderBy) => {
-      if (!Array.isArray(orderBy)) throw Error(`ORDER_BY`);
-      if (!orderBy.length) throw Error(`ORDER_BY`);
+      if (!Array.isArray(orderBy)) throw Error('ORDER_BY');
+      if (!orderBy.length) throw Error('ORDER_BY');
 
       let orderAttribute;
       let orderDirection;
@@ -253,8 +253,8 @@ export function sequelizeConnection({
         orderAssociationsOrJson = orderBy.slice(0, -1);
       }
 
-      if (!orderAttribute) throw Error(`ORDER_BY`);
-      if (!orderDirection) throw Error(`ORDER_BY`);
+      if (!orderAttribute) throw Error('ORDER_BY');
+      if (!orderDirection) throw Error('ORDER_BY');
 
       if (args.last) orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
 
@@ -276,7 +276,7 @@ export function sequelizeConnection({
           associationInclude.push({association, include: []});
         } else {
           if (source) {
-            if (!(value in source.attributes)) throw Error(`ORDER_BY`);
+            if (!(value in source.attributes)) throw Error('ORDER_BY');
 
             source = null;
           }
@@ -354,7 +354,7 @@ export function sequelizeConnection({
   };
 
   //build: resolverFactory
-  let $resolver = resolverFactory(target, {
+  let $resolver = resolverFactory(targetMaybeThunk, {
     include,
     handleConnection: false,
     list: true,
@@ -368,6 +368,7 @@ export function sequelizeConnection({
 
       const {
         source,
+        target = targetMaybeThunk//todo: resolve targetMaybeThunk
       } = info;
 
       var cursor = null;
@@ -444,11 +445,11 @@ export function sequelizeConnection({
       return $resolver(source, args, context, info);
     }
 
-    return {
+    return after({
       source,
       args,
       ...buildFindOptions({}, args, context, info)//build: buildFindOptions
-    };
+    }, args, context, info);
   };
 
   resolver.$association = $resolver.$association;
