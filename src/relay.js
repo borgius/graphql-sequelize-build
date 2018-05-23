@@ -7,8 +7,7 @@ import {
 } from 'graphql-relay';
 
 import {
-  GraphQLList,
-  GraphQLEnumType
+  GraphQLList
 } from 'graphql';
 
 import {
@@ -21,6 +20,12 @@ import simplifyAST from './simplifyAST';
 import resolverFactory from './resolver.js';
 import JSONType from './types/jsonType.js';
 import {assignWithArray} from './helpers';
+
+import {Model} from 'sequelize';
+
+function getModelOfInstance(instance) {
+  return instance instanceof Model ? instance.constructor : instance.Model;
+}
 
 export class NodeTypeMapper {
   constructor() {
@@ -134,8 +139,6 @@ export function sequelizeConnection({
   });
 
   const model = target.target ? target.target : target;
-  const SEPERATOR = '$';
-  const PREFIX = 'arrayconnection' + SEPERATOR;
 
   if (orderByType === undefined) orderByType = JSONType; //build: orderByType
 
@@ -157,8 +160,9 @@ export function sequelizeConnection({
    * @return {String}          The Base64 encoded cursor string
    */
   let toCursor = function (item, index) {
-    let id = item.get(model.primaryKeyAttribute);
-    return base64(PREFIX + id + SEPERATOR + index);
+    const {primaryKeyAttribute} = getModelOfInstance(item);
+    const id = typeof primaryKeyAttribute === 'string' ? item.get(primaryKeyAttribute) : null;
+    return base64(JSON.stringify([id, index]));
   };
 
   /**
@@ -167,9 +171,7 @@ export function sequelizeConnection({
    * @return {Object}        Object containing ID and index
    */
   let fromCursor = function (cursor) {
-    cursor = unbase64(cursor);
-    cursor = cursor.substring(PREFIX.length, cursor.length);
-    let [id, index] = cursor.split(SEPERATOR);
+    let [id, index] = JSON.parse(unbase64(cursor));
 
     return {
       id,

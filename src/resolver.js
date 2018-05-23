@@ -1,4 +1,4 @@
-import { GraphQLList } from 'graphql';
+import { GraphQLList, GraphQLNonNull } from 'graphql';
 import _ from 'lodash';
 import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeType, nodeAST } from './relay';
@@ -59,7 +59,9 @@ function resolverFactory(target, options = {}) {
     var ast = info.fieldASTs || info.fieldNodes
       , simpleAST = simplifyAST(ast, info)
       , type = info.returnType
-      , list = options.list || type instanceof GraphQLList
+      , list = options.list ||
+        type instanceof GraphQLList ||
+        type instanceof GraphQLNonNull && type.ofType instanceof GraphQLList
       , findOptions = argsToFindOptions(args, targetAttributes);
 
     if (isConnection(type)) {
@@ -71,7 +73,8 @@ function resolverFactory(target, options = {}) {
       ...info,
       ast: simpleAST,
       type: type,
-      source: source
+      source: source,
+      target: target
     };
 
     context = context || {};
