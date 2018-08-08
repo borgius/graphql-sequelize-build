@@ -1,6 +1,6 @@
 {
   "name": "graphql-sequelize-build",
-  "version": "3.0.2",
+  "version": "3.1.0",
   "description": "GraphQL & Relay for MySQL & Postgres via Sequelize",
   "engines": {
     "node": "^7.0.0"
@@ -16,13 +16,13 @@
     "graphql",
     "sequelize"
   ],
-  "author": "ivnivnch <ivnivnch@gmail.com>",
+  "author": "Ivan M <ivnivnch@gmail.com>",
   "dependencies": {
     "lodash": "^4.0.0"
   },
   "peerDependencies": {
     "graphql-relay": "^0.4.2 || ^0.5.0",
-    "graphql": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0",
+    "graphql": "^0.5.0 || ^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0",
     "sequelize": ">=3.0.0"
   },
   "devDependencies": {

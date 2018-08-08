@@ -93,7 +93,7 @@ export function handleConnection(values, args) {
   return connectionFromArray(values, args);
 }
 
-export function sequelizeNodeInterface(sequelize) {
+export function createNodeInterface(sequelize) {
   let nodeTypeMapper = new NodeTypeMapper();
   const nodeObjects = nodeDefinitions(
     idFetcher(sequelize, nodeTypeMapper),
@@ -106,6 +106,8 @@ export function sequelizeNodeInterface(sequelize) {
   };
 }
 
+export {createNodeInterface as sequelizeNodeInterface};
+
 export function nodeAST(connectionAST) {
   return connectionAST.fields.edges &&
     connectionAST.fields.edges.fields.node;
@@ -115,41 +117,19 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
-export function sequelizeConnection({
-  name,
-  nodeType,
+export function createConnectionResolver({
   target: targetMaybeThunk,
-  include,//build: resolver include
-  orderBy: orderByType,//build: orderByType
   before,
-  handleResult,//build: handleResult
   after,
-  connectionFields,
-  edgeFields,
-  where
+  handleResult,//build: handleResult
+  where,
+  orderBy: orderByType,//build: orderByType
+  ignoreArgs,
+  include//build: resolver include
 }) {
-  const {
-    edgeType,
-    connectionType
-  } = connectionDefinitions({
-    name,
-    nodeType,
-    connectionFields,
-    edgeFields
-  });
-
-  if (orderByType === undefined) orderByType = JSONType; //build: orderByType
-
   before = before || ((options) => options);
   after = after || ((result) => result);
   handleResult = handleResult || ((result) => result);
-
-  let $connectionArgs = {
-    ...connectionArgs,
-    orderBy: {
-      type: orderByType//build: orderByType
-    }
-  };
 
   /**
    * Creates a cursor given a item returned from the Database
@@ -185,7 +165,7 @@ export function sequelizeConnection({
     };
 
     _.each(args, (value, key) => {
-      if (key in $connectionArgs) return;
+      if (ignoreArgs && key in ignoreArgs) return;
       const res = where(key, value, result);
 
       if (Array.isArray(res)) {
@@ -199,7 +179,7 @@ export function sequelizeConnection({
     return result;
   };
 
-  let resolveEdge = function (item, index, queriedCursor, args = {}, source) {
+  let resolveEdge = function (item, index, queriedCursor, sourceArgs = {}, source) {
     let startIndex = null;
     if (queriedCursor) startIndex = Number(queriedCursor.index);
     if (startIndex !== null) {
@@ -211,7 +191,8 @@ export function sequelizeConnection({
     return {
       cursor: toCursor(item, index + startIndex),
       node: item,
-      source: source
+      source: source,
+      sourceArgs
     };
   };
 
@@ -230,7 +211,6 @@ export function sequelizeConnection({
     //build: orderBy with associations
 
     if (!Array.isArray(args.orderBy)) args.orderBy = [];
-
     if (!args.orderBy.length) args.orderBy.push([model.primaryKeyAttribute, 'ASC']);
 
     assignWithArray(options, args.orderBy.reduce((result, orderBy) => {
@@ -439,7 +419,7 @@ export function sequelizeConnection({
     }
   });
 
-  let resolver = (source, args, context, info) => {
+  let resolveConnection = (source, args, context, info) => {
     var fieldNodes = info.fieldASTs || info.fieldNodes;
     if (simplifyAST(fieldNodes[0], info).fields.edges) {
       return $resolver(source, args, context, info);
@@ -452,17 +432,72 @@ export function sequelizeConnection({
     }, args, context, info);
   };
 
-  resolver.$association = $resolver.$association;
-  resolver.$before = $resolver.$before;
-  resolver.$after = $resolver.$after;
-  resolver.$options = $resolver.$options;
+  resolveConnection.$association = $resolver.$association;
+  resolveConnection.$before = $resolver.$before;
+  resolveConnection.$after = $resolver.$after;
+  resolveConnection.$options = $resolver.$options;
+
+  return {
+    resolveEdge,
+    resolveConnection
+  };
+}
+
+export function createConnection({
+  name,
+  nodeType,
+  target: targetMaybeThunk,
+  orderBy: orderByType,//build: orderByType
+  before,
+  after,
+  handleResult,//build: handleResult
+  connectionFields,
+  edgeFields,
+  where,
+  include,//build: resolver include
+}) {
+  const {
+    edgeType,
+    connectionType
+  } = connectionDefinitions({
+    name,
+    nodeType,
+    connectionFields,
+    edgeFields
+  });
+
+  if (orderByType === undefined) orderByType = JSONType; //build: orderByType
+
+  let $connectionArgs = {
+    ...connectionArgs,
+    orderBy: {
+      type: orderByType//build: orderByType
+    }
+  };
+
+  const {
+    resolveEdge,
+    resolveConnection
+  } = createConnectionResolver({
+    orderBy: orderByType,
+    target: targetMaybeThunk,
+    before,
+    after,
+    handleResult,//build: handleResult
+    where,
+    ignoreArgs: $connectionArgs,
+    include//build: resolver include
+  });
 
   return {
     connectionType,
     edgeType,
     nodeType,
     resolveEdge,
+    resolveConnection,
     connectionArgs: $connectionArgs,
-    resolve: resolver
+    resolve: resolveConnection
   };
 }
+
+export {createConnection as sequelizeConnection};

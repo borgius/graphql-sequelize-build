@@ -6,11 +6,16 @@ import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
 
 function whereQueryVarsToValues(o, vals) {
-  _.forEach(o, (v, k) => {
-    if (typeof v === 'function') {
+  [
+    ...Object.getOwnPropertyNames(o),
+    ...Object.getOwnPropertySymbols(o)
+  ].forEach(k => {
+    if (_.isFunction(o[k])) {
       o[k] = o[k](vals);
-    } else if (v && typeof v === 'object') {
-      whereQueryVarsToValues(v, vals);
+      return;
+    }
+    if (_.isObject(o[k])) {
+      whereQueryVarsToValues(o[k], vals);
     }
   });
 }
@@ -111,9 +116,7 @@ function resolverFactory(target, options = {}) {
 
       if (Array.isArray(findOptions.include)) {
         findOptions.include = findOptions.include.reduce(deduplicateInclude, []); //build: deduplicate include associations
-
         findOptions.include.forEach(fixIncludeOffset); //build: fix include offset bug
-
         if (!findOptions.include.length) delete findOptions.include;
       }
 
