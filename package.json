@@ -2,9 +2,6 @@
   "name": "graphql-sequelize-build",
   "version": "3.1.0",
   "description": "GraphQL & Relay for MySQL & Postgres via Sequelize",
-  "engines": {
-    "node": "^7.0.0"
-  },
   "main": "lib/index.js",
   "scripts": {
     "check": "npm run lint",
